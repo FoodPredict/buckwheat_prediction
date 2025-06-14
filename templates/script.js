@@ -1,5 +1,3 @@
-// The toggleRhInputMethod function is no longer needed with the simplified RH input.
-
 // Function to clear the form
 function clearForm() {
     const form = document.getElementById('prediction-form');
@@ -47,7 +45,15 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     if (rhValue === 'not_known') {
         rhValueToSend = 'not Known'; // Send the string 'not Known' to Flask
     } else {
-        rhValueToSend = parseFloat(rhValue); // Send the numerical value as a number
+         // Attempt to parse the numerical value, but send the string if parsing fails
+         const parsedRh = parseFloat(rhValue);
+         if (!isNaN(parsedRh)) {
+             rhValueToSend = parsedRh; // Send the numerical value
+         } else {
+             // Fallback if for some reason a non-numeric but non-'not_known' value is selected
+             rhValueToSend = rhValue; // Send the original string value
+             console.warn(`Unexpected RH value selected: ${rhValue}. Sending as string.`);
+         }
     }
 
 
@@ -60,7 +66,6 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
         "Packing": packingValue // Send the selected string value (e.g., "Open to air")
     };
 
-    // If RH is 'not Known', the Flask app will need to use the main Season for the lookup.
     // The Flask app's prediction endpoint needs to be updated to handle:
     // 1. "RH in percent" being 'not Known' AND use the "Season" field for lookup.
     // 2. "RH in percent" being a number.
@@ -71,7 +76,8 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
 
     // Define the URL of your deployed Flask application on Render
-    const renderUrl = 'https://buckwheat-prediction.onrender.com/predict'; // Your Render URL + endpoint
+    const renderUrl = 'https://buckwheat-prediction.onrender.com/predict'; // YOUR RENDER URL HERE
+
 
     // Clear previous results and display loading indicator
      document.getElementById('prediction_results').innerHTML = '<h3>Prediction Results:</h3><p id="shelf_life_prediction">Predicting...</p><p id="ffa_prediction"></p>';
@@ -89,16 +95,18 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     .then(response => {
         console.log('Received raw response:', response);
         if (!response.ok) {
+             // Try to parse JSON error response even if response.ok is false
              return response.json().then(error => {
                  console.error('Error response body (parsed):', error);
                  const errorMessage = error.message || (error.error ? error.error : response.statusText);
                  throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
              }).catch(() => {
+                 // Fallback if response is not JSON
                  console.error('Error response body (non-JSON):', response.statusText);
                  throw new Error(`HTTP error! status: ${response.status}, message: ${response.statusText}`);
              });
         }
-        return response.json();
+        return response.json(); // Parse the JSON response if response.ok
     })
     .then(result => {
         console.log('Parsed JSON result:', result);
@@ -118,13 +126,4 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     })
     .catch(error => {
         console.error('Error during prediction (fetch or processing):', error);
-        document.getElementById('prediction_results').innerHTML = `<h3 style="color: red;">Prediction Error:</h3><p style="color: red;">${error.message || 'An unknown error occurred. Check console for details.'}</p>`;
-        document.getElementById('shelf_life_prediction').innerText = '';
-        document.getElementById('ffa_prediction').innerText = '';
-    });
-});
-
-
-document.addEventListener('DOMContentLoaded', function() {
-     console.log('DOM fully loaded and parsed.');
-});
+        document.getElementById('prediction_results').innerHTML = `<h3 style="color: red;">Prediction Error:
