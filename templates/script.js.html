@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Buckwheat Prediction</title>
+    <!-- Other head elements like CSS links -->
+</head>
+<body>
+
+    <div class="buckwheat-input-form">
+        <!-- Your form elements here -->
+        <label for="temp_embed">Storage Temperature (°C):</label>
+        <input id="temp_embed" name="temperature" required="" type="number" />
+
+        <label for="rh_select_embed">RH (%):</label>
+        <select id="rh_select_embed" name="rh_select" onchange="toggleRhInputEmbed()">
+            <option value="">-- Select --</option>
+            <option value="known">Enter RH</option>
+            <option value="not_known">Not Known (Use Season)</option>
+        </select>
+        <input id="rh_value_embed" name="rh_value" required="" type="number" placeholder="Enter RH %" style="display: none;" /> <!-- Initially hidden -->
+
+        <!-- ... other form elements ... -->
+
+        <label for="days_passed_embed">Days Passed after Milling:</label>
+        <select id="days_passed_embed" name="days_passed" required="">
+            <option value="">-- Select --</option>
+            <option value="not_known">Not Known</option>
+            <option value="0">0</option>
+            <!-- ... other options ... -->
+            <option value="20">20</option>
+        </select>
+
+        <label for="season_embed">Season:</label>
+        <select id="season_embed" name="season" required="">
+            <option value="">-- Select --</option>
+            <option value="Summer">Summer</option>
+            <option value="Spring">Spring</option>
+            <option value="Autumn">Autumn</option>
+            <option value="Winter">Winter</option>
+            <option value="Rainy">Rainy</option>
+        </select>
+
+        <label for="moisture_embed">Moisture (%):</label>
+        <select id="moisture_embed" name="moisture" required="">
+            <option value="">-- Select --</option>
+            <option value="<12">&lt;12</option>
+            <!-- ... other options ... -->
+        </select>
+
+        <!-- Add your packing input here -->
+        <label for="packing_embed">Packing:</label>
+        <input id="packing_embed" name="packing" required="" type="text" />
+
+
+        <!-- Add a button to trigger the prediction -->
+        <button type="submit">Get Prediction</button>
+
+    </div>
+
+    <!-- Add elements to display results -->
+    <div id="prediction_results">
+        <p id="shelf_life_prediction"></p>
+        <p id="ffa_prediction"></p>
+    </div>
+
+
+    <script src="script.js"></script> <!-- Include your JavaScript file here -->
+</body>
+</html>
