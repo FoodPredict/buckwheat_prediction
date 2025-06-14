@@ -1,4 +1,4 @@
-import pandas as pd
+zimport pandas as pd
 import numpy as np
 import joblib
 import os
@@ -283,6 +283,51 @@ app = Flask(__name__)
 def index():
     # Serve the index.html file from the 'templates' directory
     return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json(force=True)
+
+    # ... (Your code to process incoming data, handle RH lookup, etc.) ...
+    # Ensure 'data' dictionary contains the processed numerical and string values
+    # needed to create the DataFrame for prediction.
+
+    # Example of handling incoming string values for Moisture and Packing
+    # if they need mapping to trained categories before one-hot encoding.
+    # (You would need to implement the mapping logic here if necessary)
+    # Example:
+    # packing_mapping = {'Open to air': 'BOPP bag', ...}
+    # if data.get('Packing') in packing_mapping:
+    #     data['Packing'] = packing_mapping[data['Packing']]
+
+    # Create DataFrame for prediction - ensure column names and data types match training
+    # You might need to handle 'not_known' for Days passed after milling here.
+    input_df = pd.DataFrame([data])
+
+    # Perform one-hot encoding - ensure this matches how you trained the model
+    # The column names generated here MUST match the columns in original_columns.pkl
+    input_df = pd.get_dummies(input_df, columns=['Season', 'Packing']) # Add other categorical columns if necessary
+
+    # Reindex input_df to match the training columns, filling missing with 0
+    # This is CRUCIAL to ensure the model receives inputs in the correct order and number
+    with open('original_columns.pkl', 'rb') as f:
+         trained_columns = pickle.load(f)
+
+    input_df = input_df.reindex(columns=trained_columns, fill_value=0)
+
+
+    # Make predictions
+    shelf_life_prediction = shelf_life_model.predict(input_df)[0] # Get the single prediction value
+    ffa_prediction = ffa_model.predict(input_df)[0]         # Get the single prediction value
+
+    # *** Construct the correct response dictionary ***
+    response_data = {
+        'shelf_life_days': float(shelf_life_prediction), # Ensure they are float/number types
+        'predicted_free_fatty_acids_percent': float(ffa_prediction)
+    }
+    # *** End of constructing response dictionary ***
+
+    return jsonify(response_data) # Return the dictionary as JSON
 
 # Prediction endpoint
 @app.route('/predict', methods=['POST'])
