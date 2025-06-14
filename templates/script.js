@@ -5,13 +5,13 @@ function toggleRhInputMethod() {
     const selectedMethod = rhMethodSelect.value;
 
     // Clear previous content
-    rhInputContainer.innerHTML = '';
+    rhInputContainer.innerHTML = ''; // Clear existing content first
 
     if (selectedMethod === 'enter_rh') {
         // Add input field for RH value
         rhInputContainer.innerHTML = `
             <div class="form-group">
-                <label for="rh_value_embed">Enter RH (%):</label> <!-- Label is visible when input is shown -->
+                <label for="rh_value_embed">Enter RH (%):</label>
                 <input type="number" id="rh_value_embed" name="rh_value" placeholder="Enter RH %" required class="form-control" step="0.1">
             </div>
         `;
@@ -19,7 +19,7 @@ function toggleRhInputMethod() {
         // Add Season dropdown for RH lookup
          rhInputContainer.innerHTML = `
              <div class="form-group">
-                 <label for="season_embed_rh">Season for RH Lookup:</label> <!-- More descriptive label -->
+                 <label for="season_embed_rh">Season for RH Lookup:</label>
                  <select id="season_embed_rh" name="season_for_rh" required class="form-control">
                      <option value="">-- Select Season --</option>
                      <option value="Summer">Summer</option>
@@ -31,7 +31,8 @@ function toggleRhInputMethod() {
              </div>
          `;
     }
-    // If selectedMethod is empty ('-- Select RH Method --'), the container remains empty.
+    // If selectedMethod is empty (''), the container remains empty.
+     console.log('toggleRhInputMethod executed. Selected method:', selectedMethod); // Add logging
 }
 
 // Function to clear the form
@@ -52,22 +53,25 @@ function clearForm() {
     document.getElementById('moisture_embed').value = '';
     document.getElementById('packing_embed').value = '';
      document.getElementById('rh_method_embed').value = ''; // Reset RH method select
+
+    console.log('Form cleared.'); // Add logging
 }
 
 
 document.getElementById('prediction-form').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission
+    console.log('Form submitted.'); // Add logging
 
     // Collect input data from the form
     const temperature = document.getElementById('temp_embed').value;
     const rhMethod = document.getElementById('rh_method_embed').value;
     let rhValueToSend; // Value to send to the Flask app
-    let seasonForRhLookup = null; // To hold the season if used for RH
+
 
     if (rhMethod === 'enter_rh') {
         const rhValueInput = document.getElementById('rh_value_embed');
-        if (!rhValueInput || rhValueInput.value === '') {
-             alert('Please enter the RH value.');
+        if (!rhValueInput || rhValueInput.value === '' || isNaN(parseFloat(rhValueInput.value))) { // Added isNaN check
+             alert('Please enter a valid numeric RH value.');
              return;
         }
         rhValueToSend = parseFloat(rhValueInput.value);
@@ -78,7 +82,7 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
             return;
         }
         rhValueToSend = 'not Known'; // Send 'not Known' string
-        seasonForRhLookup = seasonForRhSelect.value; // Capture the season for RH lookup
+        // The Season value itself is collected from the main season dropdown later
     } else {
         alert('Please select a method for providing RH.');
         return;
@@ -119,12 +123,14 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     // Prepare data for the API in the format your Flask app expects
     const data = {
         "Storage Temperature in C": parseFloat(temperature),
-        "RH in percent": rhValueToSend, // Use the value determined by the method
-        "Days passed after milling": daysPassedValue, // Send the selected value (string or number)
+        "RH in percent": rhValueToSend, // Use the value determined by the method (number or 'not Known')
+        "Days passed after milling": daysPassedValue, // Send the selected value (string 'not_known' or number as string)
         "Season": mainSeasonValue, // Use the value from the main season select
         "Moisture": moistureValue, // Send the selected string value
         "Packing": packingValue // Send the selected string value
     };
+
+    console.log('Data being sent:', data); // Log the data being sent
 
     // Define the URL of your deployed Flask application on Render
     const renderUrl = 'https://buckwheat-prediction.onrender.com/predict'; // Your Render URL + endpoint
@@ -143,22 +149,25 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
         body: JSON.stringify(data)
     })
     .then(response => {
+        console.log('Received response:', response); // Log the raw response
         if (!response.ok) {
-            // Handle HTTP errors (e.g., 400, 500)
-            return response.json().then(error => {
-                 // Attempt to get a more specific error message from the server
+            // Attempt to read response body even if not OK, as it might contain error details
+             return response.json().then(error => {
+                 console.error('Error response body:', error); // Log error response body
                  const errorMessage = error.message || (error.error ? error.error : response.statusText);
                  throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
             }).catch(() => {
-                 // Fallback if response body is not JSON or error structure is different
+                 // Fallback if response body is not JSON
                  throw new Error(`HTTP error! status: ${response.status}, message: ${response.statusText}`);
             });
         }
         return response.json(); // Parse the JSON response
     })
     .then(result => {
-        // Check if the result object has the expected properties
-        if (result && typeof result.shelf_life_days !== 'undefined' && typeof result.predicted_free_fatty_acids_percent !== 'undefined') {
+        console.log('Parsed JSON result:', result); // Log the parsed result
+
+        // Check if the result object has the expected properties and they are numbers
+        if (result && typeof result.shelf_life_days === 'number' && typeof result.predicted_free_fatty_acids_percent === 'number') {
              // Display predictions in the designated HTML elements
              document.getElementById('shelf_life_prediction').innerText = `Predicted Shelf Life: ${result.shelf_life_days.toFixed(2)} days`;
              document.getElementById('ffa_prediction').innerText = `Predicted Free Fatty Acids: ${result.predicted_free_fatty_acids_percent.toFixed(2)} %`;
@@ -168,13 +177,13 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
         } else {
             // Handle case where response is OK but structure is unexpected
-            console.error('Unexpected response format:', result);
-            document.getElementById('prediction_results').innerHTML = `<h3 style="color: red;">Prediction Error:</h3><p style="color: red;">Unexpected response from server.</p>`;
+            console.error('Unexpected response format or data types:', result);
+            document.getElementById('prediction_results').innerHTML = `<h3 style="color: red;">Prediction Error:</h3><p style="color: red;">Unexpected prediction data received from server.</p>`;
         }
 
     })
     .catch(error => {
-        console.error('Error during prediction:', error);
+        console.error('Error during prediction (fetch or processing):', error);
         // Display an error message to the user
         document.getElementById('prediction_results').innerHTML = `<h3 style="color: red;">Prediction Error:</h3><p style="color: red;">${error.message || 'An unknown error occurred.'}</p>`;
         document.getElementById('shelf_life_prediction').innerText = ''; // Clear previous results
@@ -185,6 +194,5 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
 // Initial call to set the correct state for the conditional RH input area when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // No initial call to toggleRhInputMethod needed here as we want the user to select first.
-    // The container will be empty initially, which is correct.
+    // No initial call needed here, the container starts empty which is correct.
 });
