@@ -1,161 +1,83 @@
-// Function to toggle the RH input method display
-function toggleRhInputMethod() {
-    const rhMethodSelect = document.getElementById('rh_method_embed');
-    const rhInputContainer = document.getElementById('rh-input-container');
-    const selectedMethod = rhMethodSelect.value;
+// The toggleRhInputMethod function is no longer needed with the simplified RH input.
 
-    // *** Add this check ***
-    if (!rhInputContainer) {
-        console.error("Error: 'rh-input-container' element not found in the HTML.");
-        return; // Stop the function if the container isn't found
-    }
-    // *** End of added check ***
-
-    // Clear previous content
-    rhInputContainer.innerHTML = ''; // Clear existing content first
-
-    if (selectedMethod === 'known') { // Value is 'known'
-        // Add input field for RH value
-        rhInputContainer.innerHTML = `
-            <div class="form-group">
-                <label for="rh_value_embed">Enter RH (%):</label>
-                <input type="number" id="rh_value_embed" name="rh_value" placeholder="Enter RH %" required class="form-control" step="0.1">
-            </div>
-        `;
-        console.log("RH Known selected. Attempted to add numerical input field.");
-    } else if (selectedMethod === 'not_known') { // Value is 'not_known'
-        // Add Season dropdown for RH lookup
-         rhInputContainer.innerHTML = `
-             <div class="form-group">
-                 <label for="season_embed_rh">Season for RH Lookup:</label>
-                 <select id="season_embed_rh" name="season_for_rh" required class="form-control">
-                     <option value="">-- Select Season --</option>
-                     <option value="Summer">Summer</option>
-                     <option value="Spring">Spring</option>
-                     <option value="Autumn">Autumn</option>
-                     <option value="Winter">Winter</option>
-                     <option value="Rainy">Rainy</option>
-                 </select>
-             </div>
-         `;
-         console.log("RH not known selected. Attempted to add Season dropdown for lookup.");
-    } else {
-         console.log("No RH method selected (initial state or reset).");
-    }
-     console.log('toggleRhInputMethod executed. Selected method:', selectedMethod);
-}
-
-// ... (rest of your script.js code for clearForm and form submission remains the same) ...
-
-// Function to clear the form (add the new console log here too)
+// Function to clear the form
 function clearForm() {
     const form = document.getElementById('prediction-form');
-    form.reset();
+    form.reset(); // Resets all form elements to their initial state
 
+    // Clear prediction results and reset the results area
     document.getElementById('prediction_results').innerHTML = '<h3>Prediction Results:</h3><p id="shelf_life_prediction"></p><p id="ffa_prediction"></p>';
-    document.getElementById('prediction_results').style.color = 'black';
+    document.getElementById('prediction_results').style.color = 'black'; // Reset text color
 
-    document.getElementById('rh-input-container').innerHTML = '';
-
+     // Reset specific selects to their default option
+    document.getElementById('rh_embed').value = ''; // Reset the new RH dropdown
     document.getElementById('days_passed_embed').value = '';
     document.getElementById('season_embed').value = '';
     document.getElementById('moisture_embed').value = '';
     document.getElementById('packing_embed').value = '';
-    document.getElementById('rh_method_embed').value = '';
 
     console.log('Form cleared.');
 }
 
-// Form submission event listener (remains the same)
+
 document.getElementById('prediction-form').addEventListener('submit', function(event) {
     event.preventDefault();
     console.log('Form submitted.');
 
-    // ... (data collection and fetch logic remain the same) ...
-
-    // Collect input data (ensure rhValueToSend is collected correctly based on the *actual* input field present)
+    // Collect input data from the form
     const temperature = document.getElementById('temp_embed').value;
-    const rhMethod = document.getElementById('rh_method_embed').value;
+    const rhValue = document.getElementById('rh_embed').value; // Get value from the single RH dropdown
+
+
+    // Basic validation
+    if (!temperature || temperature === '' || rhValue === '' || document.getElementById('days_passed_embed').value === '' || document.getElementById('season_embed').value === '' || document.getElementById('moisture_embed').value === '' || document.getElementById('packing_embed').value === '') {
+        alert('Please fill in all required fields.');
+        console.log('Validation failed: Required fields missing.');
+        return;
+    }
+
+    const daysPassedValue = document.getElementById('days_passed_embed').value;
+    const mainSeasonValue = document.getElementById('season_embed').value;
+    const moistureValue = document.getElementById('moisture_embed').value;
+    const packingValue = document.getElementById('packing_embed').value;
+
+
+    // Prepare data for the API in the format your Flask app expects
+    // Handle the 'not_known' RH value
     let rhValueToSend;
-    let seasonForRhLookupValue = null;
-
-    if (rhMethod === 'known') {
-        const rhValueInput = document.getElementById('rh_value_embed');
-        if (!rhValueInput || rhValueInput.value === '' || isNaN(parseFloat(rhValueInput.value))) {
-            alert('Please enter a valid numeric RH value.');
-            console.log('Validation failed: Invalid RH value.');
-            return;
-        }
-        rhValueToSend = parseFloat(rhValueInput.value);
-    } else if (rhMethod === 'not_known') {
-        const seasonForRhSelect = document.getElementById('season_embed_rh');
-        if (!seasonForRhSelect || seasonForRhSelect.value === '') {
-            alert('Please select a season for RH lookup.');
-            console.log('Validation failed: No season selected for RH lookup.');
-            return;
-        }
-        rhValueToSend = 'not Known';
-        seasonForRhLookupValue = seasonForRhSelect.value;
+    if (rhValue === 'not_known') {
+        rhValueToSend = 'not Known'; // Send the string 'not Known' to Flask
     } else {
-        alert('Please select a method for providing RH.');
-        console.log('Validation failed: No RH method selected.');
-        return;
+        rhValueToSend = parseFloat(rhValue); // Send the numerical value as a number
     }
 
-    const daysPassedSelect = document.getElementById('days_passed_embed');
-    if (!daysPassedSelect || daysPassedSelect.value === '') {
-        alert('Please select Days Passed after Milling.');
-        console.log('Validation failed: No Days Passed selected.');
-        return;
-    }
-    const daysPassedValue = daysPassedSelect.value;
-
-    const mainSeasonSelect = document.getElementById('season_embed');
-    if (!mainSeasonSelect || mainSeasonSelect.value === '') {
-        alert('Please select a season for the prediction.');
-        console.log('Validation failed: No main Season selected.');
-        return;
-    }
-    const mainSeasonValue = mainSeasonSelect.value;
-
-    const moistureSelect = document.getElementById('moisture_embed');
-    if (!moistureSelect || moistureSelect.value === '') {
-        alert('Please select Moisture.');
-        console.log('Validation failed: No Moisture selected.');
-        return;
-    }
-    const moistureValue = moistureSelect.value;
-
-    const packingSelect = document.getElementById('packing_embed');
-    if (!packingSelect || packingSelect.value === '') {
-        alert('Please select Packing.');
-        console.log('Validation failed: No Packing selected.');
-        return;
-    }
-    const packingValue = packingSelect.value;
-
-    const seasonValueToSend = mainSeasonValue;
 
     const data = {
         "Storage Temperature in C": parseFloat(temperature),
-        "RH in percent": rhValueToSend,
-        "Days passed after milling": daysPassedValue,
-        "Season": seasonValueToSend,
-        "Moisture": moistureValue,
-        "Packing": packingValue
+        "RH in percent": rhValueToSend, // Use the value from the simplified RH dropdown
+        "Days passed after milling": daysPassedValue, // Send the selected value (string 'not_known' or number as string)
+        "Season": mainSeasonValue, // Send the main Season value
+        "Moisture": moistureValue, // Send the selected string value
+        "Packing": packingValue // Send the selected string value
     };
 
-    if (rhMethod === 'not_known') {
-        data['Season for RH Lookup'] = seasonForRhLookupValue;
-    }
+    // If RH is 'not Known', the Flask app will need to use the main Season for the lookup.
+    // We don't need a separate 'Season for RH Lookup' field in the data object anymore
+    // because the Flask app can use the 'Season' field that's already required for the model.
+
 
     console.log('Data being sent to Flask:', data);
 
-    const renderUrl = 'https://buckwheat-prediction.onrender.com/predict';
 
-    document.getElementById('prediction_results').innerHTML = '<h3>Prediction Results:</h3><p id="shelf_life_prediction">Predicting...</p><p id="ffa_prediction"></p>';
-    document.getElementById('prediction_results').style.color = 'black';
+    // Define the URL of your deployed Flask application on Render
+    const renderUrl = 'https://buckwheat-prediction.onrender.com/predict'; // Your Render URL + endpoint
 
+    // Clear previous results and display loading indicator
+     document.getElementById('prediction_results').innerHTML = '<h3>Prediction Results:</h3><p id="shelf_life_prediction">Predicting...</p><p id="ffa_prediction"></p>';
+     document.getElementById('prediction_results').style.color = 'black';
+
+
+    // Send POST request to your Flask app
     fetch(renderUrl, {
         method: 'POST',
         headers: {
@@ -180,6 +102,7 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     .then(result => {
         console.log('Parsed JSON result:', result);
 
+        // Check if the result object has the expected properties and they are numbers
         if (result && typeof result.shelf_life_days === 'number' && typeof result.predicted_free_fatty_acids_percent === 'number') {
              document.getElementById('shelf_life_prediction').innerText = `Predicted Shelf Life: ${result.shelf_life_days.toFixed(2)} days`;
              document.getElementById('ffa_prediction').innerText = `Predicted Free Fatty Acids: ${result.predicted_free_fatty_acids_percent.toFixed(2)} %`;
