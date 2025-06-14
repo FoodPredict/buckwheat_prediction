@@ -1,69 +1,86 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Buckwheat Prediction</title>
-    <!-- Other head elements like CSS links -->
-</head>
-<body>
+document.getElementById('prediction-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
 
-    <div class="buckwheat-input-form">
-        <!-- Your form elements here -->
-        <label for="temp_embed">Storage Temperature (°C):</label>
-        <input id="temp_embed" name="temperature" required="" type="number" />
+    // Collect input data from the form
+    const temperature = document.getElementById('temp_embed').value;
+    const rhSelect = document.getElementById('rh_select_embed').value;
+    let rhValue;
+    if (rhSelect === 'known') {
+        rhValue = document.getElementById('rh_value_embed').value;
+    } else {
+        rhValue = 'not Known'; // Match the string used in your Flask app's season_rh_map logic
+    }
+    const daysPassed = document.getElementById('days_passed_embed').value;
+    const season = document.getElementById('season_embed').value;
+    const moisture = document.getElementById('moisture_embed').value;
+    const packing = document.getElementById('packing_embed').value;
 
-        <label for="rh_select_embed">RH (%):</label>
-        <select id="rh_select_embed" name="rh_select" onchange="toggleRhInputEmbed()">
-            <option value="">-- Select --</option>
-            <option value="known">Enter RH</option>
-            <option value="not_known">Not Known (Use Season)</option>
-        </select>
-        <input id="rh_value_embed" name="rh_value" required="" type="number" placeholder="Enter RH %" style="display: none;" /> <!-- Initially hidden -->
+    // Basic input validation (optional but recommended)
+    if (!temperature || !rhSelect || !daysPassed || !season || !moisture || !packing) {
+        alert('Please fill in all required fields.');
+        return; // Stop the function if validation fails
+    }
 
-        <!-- ... other form elements ... -->
+    // Prepare data for the API in the format your Flask app expects
+    // Ensure data types match what your Flask app expects (e.g., numbers as numbers, strings as strings)
+    const data = {
+        "Storage Temperature in C": parseFloat(temperature),
+        "RH in percent": rhValue, // Send 'not Known' as a string, Flask handles the lookup
+        "Days passed after milling": parseInt(daysPassed),
+        "Season": season,
+        "Moisture": parseFloat(moisture.replace('<', '').replace('>', '').replace('-', ' ').split(' ')[0]), // Handle different moisture formats
+        "Packing": packing
+    };
 
-        <label for="days_passed_embed">Days Passed after Milling:</label>
-        <select id="days_passed_embed" name="days_passed" required="">
-            <option value="">-- Select --</option>
-            <option value="not_known">Not Known</option>
-            <option value="0">0</option>
-            <!-- ... other options ... -->
-            <option value="20">20</option>
-        </select>
+    // Define the URL of your deployed Flask application on Render
+    const renderUrl = 'https://buckwheat-prediction.onrender.com/predict'; // Your Render URL + endpoint
 
-        <label for="season_embed">Season:</label>
-        <select id="season_embed" name="season" required="">
-            <option value="">-- Select --</option>
-            <option value="Summer">Summer</option>
-            <option value="Spring">Spring</option>
-            <option value="Autumn">Autumn</option>
-            <option value="Winter">Winter</option>
-            <option value="Rainy">Rainy</option>
-        </select>
+    // Send POST request to your Flask app
+    fetch(renderUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Handle HTTP errors (e.g., 400, 500)
+            return response.json().then(error => {
+                throw new Error(`HTTP error! status: ${response.status}, message: ${error.message || response.statusText}`);
+            });
+        }
+        return response.json(); // Parse the JSON response
+    })
+    .then(result => {
+        // Display predictions in the designated HTML elements
+        document.getElementById('shelf_life_prediction').innerText = `Predicted Shelf Life: ${result.shelf_life_days.toFixed(2)} days`;
+        document.getElementById('ffa_prediction').innerText = `Predicted Free Fatty Acids: ${result.predicted_free_fatty_acids_percent.toFixed(2)} %`;
+    })
+    .catch(error => {
+        console.error('Error during prediction:', error);
+        // Display an error message to the user
+        document.getElementById('prediction_results').innerHTML = `<p style="color: red;">Error making prediction: ${error.message || 'Please check inputs.'}</p>`;
+        document.getElementById('shelf_life_prediction').innerText = ''; // Clear previous results
+        document.getElementById('ffa_prediction').innerText = '';
+    });
+});
 
-        <label for="moisture_embed">Moisture (%):</label>
-        <select id="moisture_embed" name="moisture" required="">
-            <option value="">-- Select --</option>
-            <option value="<12">&lt;12</option>
-            <!-- ... other options ... -->
-        </select>
+// Function to toggle RH input visibility based on select value
+function toggleRhInputEmbed() {
+    const rhSelect = document.getElementById('rh_select_embed').value;
+    const rhValueInput = document.getElementById('rh_value_embed');
+    if (rhSelect === 'known') {
+        rhValueInput.style.display = 'block';
+        rhValueInput.required = true; // Make the input required when visible
+    } else {
+        rhValueInput.style.display = 'none';
+        rhValueInput.required = false; // Make the input not required when hidden
+        rhValueInput.value = ''; // Clear the input value when hidden
+    }
+}
 
-        <!-- Add your packing input here -->
-        <label for="packing_embed">Packing:</label>
-        <input id="packing_embed" name="packing" required="" type="text" />
-
-
-        <!-- Add a button to trigger the prediction -->
-        <button type="submit">Get Prediction</button>
-
-    </div>
-
-    <!-- Add elements to display results -->
-    <div id="prediction_results">
-        <p id="shelf_life_prediction"></p>
-        <p id="ffa_prediction"></p>
-    </div>
-
-
-    <script src="script.js"></script> <!-- Include your JavaScript file here -->
-</body>
-</html>
+// Initial call to set the correct state when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    toggleRhInputEmbed(); // Ensure the RH input is hidden if 'Not Known' is initially selected or nothing is selected
+});
