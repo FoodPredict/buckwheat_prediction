@@ -1,0 +1,7 @@
+txt
+        pandas==YOUR_PANDAS_VERSION
+        numpy==YOUR_NUMPY_VERSION
+        scikit-learn==YOUR_SKLEARN_VERSION
+        joblib==YOUR_JOBLIB_VERSION
+        Flask==YOUR_FLASK_VERSION
+        gunicorn==YOUR_GUNICORN_VERSION

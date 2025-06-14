@@ -1,0 +1,21 @@
+gitignore
+        # Byte-code files
+        *.pyc
+
+        # IDE files
+        .idea/
+        *.iml
+        .vscode/
+
+        # Virtual environment
+        venv/
+        env/
+
+        # Jupyter Notebook artifacts
+        .ipynb_checkpoints/
+
+        # Data files that can be regenerated
+        *.csv
+
+        # Specific files you don't want to track (optional)
+        # my_config.ini
