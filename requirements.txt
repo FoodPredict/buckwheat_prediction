@@ -1,7 +1,7 @@
 txt
-        pandas==YOUR_PANDAS_VERSION
-        numpy==YOUR_NUMPY_VERSION
-        scikit-learn==YOUR_SKLEARN_VERSION
-        joblib==YOUR_JOBLIB_VERSION
-        Flask==YOUR_FLASK_VERSION
-        gunicorn==YOUR_GUNICORN_VERSION
+pandas==1.5.3
+numpy==1.24.3
+scikit-learn==1.2.2
+joblib==1.3.2
+Flask==2.2.2
+gunicorn==20.1.0
