@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buckwheat Flour Quality Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Buckwheat Flour Quality Prediction</h1>
+
+        <div class="input-form">
+            <label for="temperature">Storage Temperature (°C):</label>
+            <input type="number" id="temperature" name="temperature" required><br><br>
+
+            <label for="rh">RH (%):</label>
+            <select id="rh" name="rh" onchange="toggleRhInput()">
+                <option value="">-- Select --</option>
+                <option value="known">Enter RH</option>
+                <option value="not_known">Not Known (Use Season)</option>
+            </select>
+             <input type="number" id="rh_value" name="rh_value" placeholder="Enter RH %" required><br><br>
+
+
+            <label for="days_passed">Days Passed after Milling:</label>
+             <select id="days_passed" name="days_passed" required>
+                <option value="">-- Select --</option>
+                <option value="not_known">Not Known</option>
+                <option value="0">0</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="6">6</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18">18</option>
+                <option value="20">20</option>
+            </select><br><br>
+
+            <label for="season">Season:</label>
+            <select id="season" name="season" required>
+                 <option value="">-- Select --</option>
+                 <option value="Summer">Summer</option>
+                 <option value="Spring">Spring</option>
+                 <option value="Autumn">Autumn</option>
+                 <option value="Winter">Winter</option>
+                 <option value="Rainy">Rainy</option>
+            </select><br><br>
+
+            <label for="moisture">Moisture (%):</label>
+             <select id="moisture" name="moisture" required>
+                 <option value="">-- Select --</option>
+                 <option value="<12">&lt;12</option>
+                 <option value=">12">&gt;12</option>
+            </select><br><br>
+
+            <label for="packing">Packing:</label>
+             <select id="packing" name="packing" required>
+                 <option value="">-- Select --</option>
+                 <option value="Open to air">Open to air</option>
+                 <option value="Closed Pack">Closed Pack</option>
+                 <option value="Vacuum Packed">Vacuum Packed</option>
+            </select><br><br>
+
+
+            <button onclick="getPrediction()">Get Prediction</button>
+        </div>
+
+        <div class="prediction-results">
+            <h2>Prediction Results</h2>
+            <p id="shelf_life_result">Shelf Life: -- days</p>
+            <p id="ffa_result">Predicted Free Fatty Acids: -- %</p>
+             <p id="error_message" style="color: red;"></p>
+        </div>
+    </div>
+
+    <script>
+        // Function to toggle the RH input field based on the dropdown selection
+        function toggleRhInput() {
+            const rhSelect = document.getElementById('rh');
+            const rhValueInput = document.getElementById('rh_value');
+            if (rhSelect.value === 'known') {
+                rhValueInput.style.display = 'inline-block';
+                rhValueInput.required = true;
+                rhValueInput.value = ''; // Clear previous value
+                rhValueInput.placeholder = 'Enter RH %';
+            } else {
+                rhValueInput.style.display = 'none';
+                 rhValueInput.required = false; // Make not required if using Season
+                 rhValueInput.value = 'Not Known'; // Set value to Not Known
+            }
+        }
+
+         // Initialize the RH input state on page load
+        document.addEventListener('DOMContentLoaded', toggleRhInput);
+
+
+        async function getPrediction() {
+            const temperature = document.getElementById('temperature').value;
+            const rhSelect = document.getElementById('rh').value;
+            const rhValue = document.getElementById('rh_value').value;
+            const daysPassed = document.getElementById('days_passed').value;
+            const season = document.getElementById('season').value;
+            const moisture = document.getElementById('moisture').value;
+            const packing = document.getElementById('packing').value;
+             const errorMessage = document.getElementById('error_message');
+             errorMessage.textContent = ''; // Clear previous error
+
+            // Basic validation (can be expanded)
+            if (!temperature || !rhSelect || !daysPassed || !season || !moisture || !packing || (rhSelect === 'known' && !rhValue)) {
+                 errorMessage.textContent = 'Please fill in all required fields.';
+                return;
+            }
+
+             // Determine the value to send for RH
+            let finalRhValue;
+            if (rhSelect === 'known') {
+                finalRhValue = parseFloat(rhValue); // Send as number if known
+                if (isNaN(finalRhValue)){
+                     errorMessage.textContent = 'Invalid RH value entered.';
+                     return;
+                }
+            } else {
+                finalRhValue = 'Not Known'; // Send the string 'Not Known'
+            }
+
+             // Determine the value to send for Days passed after milling
+             let finalDaysPassedValue;
+             if (daysPassed === 'not_known'){
+                 finalDaysPassedValue = 'Not Known'; // Send the string 'Not Known'
+             } else {
+                 finalDaysPassedValue = parseInt(daysPassed, 10); // Send as number if known
+                 if (isNaN(finalDaysPassedValue)){
+                     errorMessage.textContent = 'Invalid Days Passed value selected.';
+                     return;
+                 }
+             }
+
+
+            const inputData = {
+                'Storage Temperature in C': parseFloat(temperature), // Ensure numeric types
+                'RH in percent': finalRhValue,
+                'Days passed after milling': finalDaysPassedValue,
+                'Moisture': moisture,
+                'Season': season,
+                'Packing': packing
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(inputData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Display prediction results
+                    document.getElementById('shelf_life_result').textContent = `Shelf Life: ${result.predicted_shelf_life_days} days`;
+                    document.getElementById('ffa_result').textContent = `Predicted Free Fatty Acids: ${result.predicted_free_fatty_acids_percent} %`;
+                } else {
+                    // Display error message from the server
+                    errorMessage.textContent = `Error: ${result.error || 'Unknown error from server'}`;
+                     document.getElementById('shelf_life_result').textContent = 'Shelf Life: -- days';
+                    document.getElementById('ffa_result').textContent = 'Predicted Free Fatty Acids: -- %';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = 'An error occurred while fetching prediction.';
+                 document.getElementById('shelf_life_result').textContent = 'Shelf Life: -- days';
+                document.getElementById('ffa_result').textContent = 'Predicted Free Fatty Acids: -- %';
+            }
+        }
+    </script>
+</body>
+</html>
