@@ -10,11 +10,11 @@ function clearForm() {
     document.getElementById('prediction_results').style.color = 'black'; // Reset text color
 
      // Reset specific selects to their default option
-    document.getElementById('rh_embed').value = ''; // Reset the new RH dropdown
+    document.getElementById('rh_embed').value = ''; // Reset the RH dropdown
     document.getElementById('days_passed_embed').value = '';
     document.getElementById('season_embed').value = '';
-    document.getElementById('moisture_embed').value = '';
-    document.getElementById('packing_embed').value = '';
+    document.getElementById('moisture_embed').value = ''; // Reset Moisture dropdown
+    document.getElementById('packing_embed').value = ''; // Reset Packing dropdown
 
     console.log('Form cleared.');
 }
@@ -26,8 +26,7 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
     // Collect input data from the form
     const temperature = document.getElementById('temp_embed').value;
-    const rhValue = document.getElementById('rh_embed').value; // Get value from the single RH dropdown
-
+    const rhValue = document.getElementById('rh_embed').value; // Get value from the RH dropdown
 
     // Basic validation
     if (!temperature || temperature === '' || rhValue === '' || document.getElementById('days_passed_embed').value === '' || document.getElementById('season_embed').value === '' || document.getElementById('moisture_embed').value === '' || document.getElementById('packing_embed').value === '') {
@@ -38,8 +37,8 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
     const daysPassedValue = document.getElementById('days_passed_embed').value;
     const mainSeasonValue = document.getElementById('season_embed').value;
-    const moistureValue = document.getElementById('moisture_embed').value;
-    const packingValue = document.getElementById('packing_embed').value;
+    const moistureValue = document.getElementById('moisture_embed').value; // Get the selected string value
+    const packingValue = document.getElementById('packing_embed').value; // Get the selected string value
 
 
     // Prepare data for the API in the format your Flask app expects
@@ -54,16 +53,18 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
 
     const data = {
         "Storage Temperature in C": parseFloat(temperature),
-        "RH in percent": rhValueToSend, // Use the value from the simplified RH dropdown
+        "RH in percent": rhValueToSend, // Use the value from the RH dropdown
         "Days passed after milling": daysPassedValue, // Send the selected value (string 'not_known' or number as string)
         "Season": mainSeasonValue, // Send the main Season value
-        "Moisture": moistureValue, // Send the selected string value
-        "Packing": packingValue // Send the selected string value
+        "Moisture": moistureValue, // Send the selected string value (e.g., "< 12%")
+        "Packing": packingValue // Send the selected string value (e.g., "Open to air")
     };
 
     // If RH is 'not Known', the Flask app will need to use the main Season for the lookup.
-    // We don't need a separate 'Season for RH Lookup' field in the data object anymore
-    // because the Flask app can use the 'Season' field that's already required for the model.
+    // The Flask app's prediction endpoint needs to be updated to handle:
+    // 1. "RH in percent" being 'not Known' AND use the "Season" field for lookup.
+    // 2. "RH in percent" being a number.
+    // 3. Incoming string values for "Moisture" and "Packing" for one-hot encoding.
 
 
     console.log('Data being sent to Flask:', data);
