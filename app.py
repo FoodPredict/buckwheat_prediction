@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 # ... other imports you might have
 def full_prediction_pipeline(raw_input_data, imputer, scaler_shelf_life, scaler_ffa,
                              train_feature_columns_shelf_life, train_feature_columns_ffa,
