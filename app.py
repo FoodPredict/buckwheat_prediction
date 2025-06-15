@@ -84,8 +84,27 @@ if __name__ == '__main__':
         else:
             error_msg = "Invalid input data format. Please provide a dictionary or DataFrame."
             print(error_msg)
-            return {'error': error_msg}
+        return {'error': error_msg}
 
+
+      try:
+        # ... code to handle dict or DataFrame ...
+
+        elif isinstance(raw_input_data, pd.DataFrame):
+            processed_df = raw_input_data.copy().iloc[:1] # Ensure single row
+        else: # <--- Check the indentation of THIS line
+            error_msg = "Invalid input data format. Please provide a dictionary or DataFrame." # <--- This is likely line 87 or close to it
+            print(error_msg)
+            return {'error': error_msg} # <--- This return statement
+
+        # ... rest of the full_prediction_pipeline function ...
+
+    except Exception as e:
+        # ... exception handling for the whole function ...
+        pass
+      
+
+      
         # Ensure all expected original input features are present, even if with NaN
         for col in original_input_features:
             if col not in processed_df.columns:
