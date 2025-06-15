@@ -1,3 +1,4 @@
+from flask import Flask
 def full_prediction_pipeline(raw_input_data, imputer, scaler_shelf_life, scaler_ffa,
                              train_feature_columns_shelf_life, train_feature_columns_ffa,
                              shelf_life_model, ffa_model,
