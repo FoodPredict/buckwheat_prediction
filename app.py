@@ -71,11 +71,11 @@ if __name__ == '__main__':
         if isinstance(raw_input_data, dict):
             processed_data_dict = {}
             for key, value in raw_input_data.items():
-                 # Wrap single values in a list to create a single-row DataFrame
+                # Wrap single values in a list to create a single-row DataFrame
                 if not isinstance(value, list):
                     processed_data_dict[key] = [value]
                 else:
-                     # If it's already a list, ensure it's a list of one for a single instance
+                # If it's already a list, ensure it's a list of one for a single instance
                      processed_data_dict[key] = value[:1] if value else [np.nan] # Handle empty list case
             processed_df = pd.DataFrame(processed_data_dict)
 
@@ -102,13 +102,13 @@ if __name__ == '__main__':
 
         # Handle 'RH in percent' if 'Not Known' is provided
         if 'RH in percent' in processed_df.columns:
-            # Check the value in the first row (assuming single row input)
+        # Check the value in the first row (assuming single row input)
             rh_value = processed_df['RH in percent'].iloc[0]
             season_value = processed_df['Season'].iloc[0] # Get season value from the main Season column
 
             if isinstance(rh_value, str) and rh_value.strip().lower() == 'not known':
                 print(f"RH is 'Not Known', using RH based on Season: {season_value}")
-                # Look up the RH value based on the season
+             # Look up the RH value based on the season
                 if season_value in season_rh_map:
                     processed_df['RH in percent'] = season_rh_map[season_value]
                     print(f"Assigned RH: {processed_df['RH in percent'].iloc[0]}%")
