@@ -84,7 +84,7 @@ if __name__ == '__main__':
         else:
             error_msg = "Invalid input data format. Please provide a dictionary or DataFrame."
             print(error_msg)
-            return {'error': error_msg}
+        return {'error': error_msg}
 
       
         # Ensure all expected original input features are present, even if with NaN
