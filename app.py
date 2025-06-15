@@ -66,16 +66,16 @@ if __name__ == '__main__':
         dict: A dictionary containing the prediction results ('predicted_shelf_life_days',
               'predicted_free_fatty_acids_percent') or an error dictionary.
     """
-    try:
+   try: # This try block starts the main logic
         # 1. Ensure raw_input_data is a single-row DataFrame with expected original columns
         if isinstance(raw_input_data, dict):
             processed_data_dict = {}
             for key, value in raw_input_data.items():
-                # Wrap single values in a list to create a single-row DataFrame
+                 # Wrap single values in a list to create a single-row DataFrame
                 if not isinstance(value, list):
                     processed_data_dict[key] = [value]
                 else:
-                # If it's already a list, ensure it's a list of one for a single instance
+                     # If it's already a list, ensure it's a list of one for a single instance
                      processed_data_dict[key] = value[:1] if value else [np.nan] # Handle empty list case
             processed_df = pd.DataFrame(processed_data_dict)
 
@@ -84,8 +84,21 @@ if __name__ == '__main__':
         else:
             error_msg = "Invalid input data format. Please provide a dictionary or DataFrame."
             print(error_msg)
-                  return {'error': error_msg}
+            return {'error': error_msg}
 
+        # <-- ALL the code that follows the input format check should start at THIS indentation level
+        # (the same level as the 'if', 'elif', and 'else' lines above)
+        # Example of the next step:
+        # Ensure all expected original input features are present, even if with NaN
+        # for col in original_input_features:
+        #     if col not in processed_df.columns:
+        #         processed_df[col] = np.nan
+        # ... continue with the rest of your pipeline steps (RH imputation, encoding, scaling, prediction) ...
+
+    except Exception as e: # This except block should be aligned with the 'try' block
+        # ... exception handling code for the entire pipeline ...
+        print(f"Error during prediction pipeline execution: {e}")
+        return {'error': f'An error occurred during prediction processing: {e}'}
       
         # Ensure all expected original input features are present, even if with NaN
         for col in original_input_features:
