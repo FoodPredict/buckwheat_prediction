@@ -83,7 +83,7 @@ if __name__ == '__main__':
             processed_df = raw_input_data.copy().iloc[:1] # Ensure single row
         else:
             error_msg = "Invalid input data format. Please provide a dictionary or DataFrame."
-                  print(error_msg)
+            print(error_msg)
                   return {'error': error_msg}
 
       
